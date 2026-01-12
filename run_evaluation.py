@@ -145,7 +145,8 @@ class ModelPredictionLoader:
 
 def run_comprehensive_evaluation(fd_number: int = 1, 
                                  data_path: str = './data',
-                                 predictions_path: str = './predictions'):
+                                 predictions_path: str = './predictions',
+                                 output_path: str = './results'):
     """
     Main evaluation pipeline for C-MAPSS dataset.
     
@@ -153,6 +154,7 @@ def run_comprehensive_evaluation(fd_number: int = 1,
         fd_number: Which FD dataset to evaluate (1-4)
         data_path: Path to C-MAPSS data files
         predictions_path: Path to model prediction files
+        output_path: Path for output files (visualizations, tables)
     """
     
     print("\n" + "="*70)
@@ -162,7 +164,7 @@ def run_comprehensive_evaluation(fd_number: int = 1,
     # Initialize components
     loader = CMAPSSDataLoader(data_path)
     pred_loader = ModelPredictionLoader()
-    report = ComprehensiveReport('./results')
+    report = ComprehensiveReport(output_path)
     viz = VisualizationSuite()
     
     # Load data
@@ -252,23 +254,23 @@ def run_comprehensive_evaluation(fd_number: int = 1,
     for model_name, y_pred in predictions.items():
         viz.plot_prediction_vs_actual(
             true_rul, y_pred, model_name,
-            f'./results/FD00{fd_number}_{model_name}_prediction_vs_actual.png'
+            f'{output_path}/FD00{fd_number}_{model_name}_prediction_vs_actual.png'
         )
         
         viz.plot_error_distribution(
             true_rul, y_pred, model_name,
-            f'./results/FD00{fd_number}_{model_name}_error_distribution.png'
+            f'{output_path}/FD00{fd_number}_{model_name}_error_distribution.png'
         )
     
     # Comparative plots
     viz.plot_robustness_comparison(
         robustness_results,
-        f'./results/FD00{fd_number}_robustness_comparison.png'
+        f'{output_path}/FD00{fd_number}_robustness_comparison.png'
     )
     
     viz.plot_lifecycle_performance(
         true_rul, predictions,
-        f'./results/FD00{fd_number}_lifecycle_performance.png'
+        f'{output_path}/FD00{fd_number}_lifecycle_performance.png'
     )
     
     # Generate report tables
@@ -286,7 +288,7 @@ def run_comprehensive_evaluation(fd_number: int = 1,
     report.export_latex_table(results_df_latex, f'FD00{fd_number}_results_table.tex')
     
     # Save CSV without LaTeX formatting
-    results_df.to_csv(f'./results/FD00{fd_number}_results.csv')
+    results_df.to_csv(f'{output_path}/FD00{fd_number}_results.csv')
     
     # Robustness table
     robustness_df = pd.DataFrame(robustness_results).T
@@ -295,7 +297,7 @@ def run_comprehensive_evaluation(fd_number: int = 1,
     print("="*70)
     print(robustness_df[['Clean_RMSE', 'Noisy_RMSE', 'Degradation_Percent', 'Robustness_Score']])
     
-    robustness_df.to_csv(f'./results/FD00{fd_number}_robustness.csv')
+    robustness_df.to_csv(f'{output_path}/FD00{fd_number}_robustness.csv')
     
     # Generate key insights
     print("\n" + "="*70)

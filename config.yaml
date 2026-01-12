@@ -1,0 +1,42 @@
+# NASA C-MAPSS RUL Analysis Toolkit Configuration
+# ================================================
+
+# Paths
+paths:
+  data: "./data"
+  predictions: "./predictions"
+  results: "./results"
+
+# Default dataset
+dataset:
+  fd_number: 1  # 1, 2, 3, or 4
+
+# Robustness testing
+robustness:
+  noise_levels: [0.01, 0.02, 0.05]  # Multiple noise levels to test
+  default_noise: 0.01
+
+# Health Index (Anomaly Detection)
+health_index:
+  healthy_fraction: 0.2  # First 20% of engine life = healthy
+  contamination: 0.1
+
+# Clustering
+clustering:
+  n_clusters: 6  # 6 operating conditions for FD002/FD004
+
+# Forecasting
+forecasting:
+  lookback: 10  # Window size for predictions
+
+# Visualization
+visualization:
+  dpi: 300
+  figure_size: [12, 8]
+  style: "seaborn-v0_8-paper"
+
+# Feature Importance
+feature_importance:
+  n_estimators: 100
+  max_depth: 10
+  top_n_features: 15
