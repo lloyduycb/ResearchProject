@@ -51,17 +51,6 @@ I hypothesized that the models with the highest raw accuracy might actually be t
         - Noise Injection (Adversarial simulation).
     4.  **Output:** Statistical Significance (Wilcoxon/Friedman).
 
-> **[INSERT CODE SNIPPET HERE]**
-> *Show the core robustness logic to demonstrate technical depth.*
-> ```python
-> # From rul_analysis_toolkit.py
-> def robustness_to_noise(self, y_true, clean_pred, noisy_pred):
->     clean_rmse = np.sqrt(mean_squared_error(y_true, clean_pred))
->     noisy_rmse = np.sqrt(mean_squared_error(y_true, noisy_pred))
->     degradation = (noisy_rmse - clean_rmse) / clean_rmse * 100
->     return {'Robustness_Score': 100 - degradation}
-> ```
-
 **Speaker Notes (2:00 - 3:15):**
 "To test this, I built a comprehensive Python analysis toolkit.
 I evaluated four distinct architectures: Support Vector Regressors, LSTMs, Temporal Convolutional Networks (TCNs), and Transformers.
@@ -77,8 +66,6 @@ This effectively creates a 'Cyber-Resilience Score' for each AI architecture."
 **Visual:**
 - **Bar Chart:** Comparison of TCN vs LSTM vs SVR.
     - Highlight TCN as "Best Performance" (RMSE ~4.03).
-- **[INSERT IMAGE HERE]**: `results/all_datasets_robustness_comparison.png`
-    - *Why:* Visually proves TCN's stability against the Transformer's fragility.
 - **Table snippet:** Statistical Significance (p-values < 0.05).
 - **Key Insight Graphic:** "TCN Degradation: -0.7%" vs "Transformer: +0.2%".
 

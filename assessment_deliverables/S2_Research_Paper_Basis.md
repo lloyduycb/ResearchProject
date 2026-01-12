@@ -53,13 +53,43 @@ This research addresses the critical intersection of predictive maintenance (PdM
     - **Statistical Rigor:** 
         - Bootstrap Resampling (1000 iterations) to generate 95% Confidence Intervals (CI).
         - Wilcoxon Signed-Rank Test for pairwise model comparison ($p < 0.05$).
+			
+			> **[INSERT CODE SNIPPET HERE]**
+			> *Demonstrates the implementation of statistical rigor.*
+			> ```python
+			> # From rul_analysis_toolkit.py
+			> def compute_confidence_intervals(self, y_true, y_pred, confidence=0.95):
+			>     n_bootstrap = 1000
+			>     rmse_boots = []
+			>     for _ in range(n_bootstrap):
+			>         indices = np.random.choice(len(y_true), size=len(y_true), replace=True)
+			>         rmse_boots.append(np.sqrt(mean_squared_error(y_true[indices], y_pred[indices])))
+			>     alpha = 1 - confidence
+			>     return {'RMSE_CI': (np.percentile(rmse_boots, alpha/2 * 100), 
+			>                         np.percentile(rmse_boots, (1-alpha/2) * 100))}
+			> ```
     - **Robustness Testing:** 
         - Injection of Gaussian Noise ($\sigma = 0.01$) to simulate sensor degradation.
         - Metric: "Phm Score" (Asymmetric penalty function favoring early prediction) and "Degradation %".
+			
+			> **[INSERT CODE SNIPPET HERE]**
+			> *Key innovation: Security-aware evaluation metric.*
+			> ```python
+			> # From rul_analysis_toolkit.py
+			> def robustness_to_noise(self, y_true, clean_pred, noisy_pred, noise_level):
+			>     clean_rmse = np.sqrt(mean_squared_error(y_true, clean_pred))
+			>     noisy_rmse = np.sqrt(mean_squared_error(y_true, noisy_pred))
+			>     degradation = (noisy_rmse - clean_rmse) / clean_rmse * 100
+			>     correlation = np.corrcoef(clean_pred, noisy_pred)[0, 1]
+			>     return {'Robustness_Score': 100 - degradation, 'Prediction_Correlation': correlation}
+			> ```
 
 ## 4. Results & Analysis
 **(Approx. 1000 words)**
 - **4.1 Predictive Performance (Clean Data):**
+    > **[INSERT IMAGE HERE]**: `results/all_datasets_performance_comparison.png`
+    > *Caption: Comparative RMSE across all C-MAPSS datasets (FD001-FD004). TCN consistently outperforms architectures.*
+
     - **Table 1:** Evaluation Metrics (FD001).
       | Model | RMSE (Mean) | 95% CI | R² Score | PHM Score |
       |-------|-------------|--------|----------|-----------|
@@ -70,6 +100,9 @@ This research addresses the critical intersection of predictive maintenance (PdM
     - *Analysis:* TCN outperformed all models. The difference between TCN and LSTM was statistically significant ($p = 5.7 \times 10^{-6}$), with a large effect size (Cohen's $d = 0.72$).
 
 - **4.2 Robustness & Security Analysis:**
+    > **[INSERT IMAGE HERE]**: `results/all_datasets_robustness_comparison.png`
+    > *Caption: Robustness scores illustrating the trade-off between accuracy and stability. TCN demonstrates superior resilience.*
+
     - **Table 2:** Degradation under Noise (1% Injection).
       | Model | Clean RMSE | Noisy RMSE | % Degradation |
       |-------|------------|------------|---------------|
@@ -80,6 +113,11 @@ This research addresses the critical intersection of predictive maintenance (PdM
     - *Analysis:* While TCN is the most accurate, it is also highly stable. The Transformer, despite high accuracy, showed slightly higher sensitivity to noise. In a cyber-security context, *stability* is a proxy for *predictability* under attack.
 
 - **4.3 Error Distribution:**
+    > **[INSERT CAROUSEL HERE]**
+    > *Show the contrast in error distributions.*
+    > - Slide 1: `results/FD001_TCN_error_distribution.png` (Gaussian, centered)
+    > - Slide 2: `results/FD001_LSTM_error_distribution.png` (Skewed, potential for late failure)
+    
     - Analysis of the residuals shows that TCN errors are normally distributed and centered near zero, whereas LSTM tends to have a longer tail of "late" predictions (dangerous for maintenance).
 
 ## 5. Critical Evaluation & Discussion

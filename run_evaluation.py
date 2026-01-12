@@ -204,18 +204,24 @@ def run_comprehensive_evaluation(fd_number: int = 1,
     
     # Generate noisy predictions for robustness testing
     print("\n[3/6] Generating noisy predictions for robustness analysis...")
-    noise_level = 0.01  # 1% Gaussian noise
-    noisy_predictions = {}
+    noise_levels = [0.01, 0.02, 0.05]  # Multiple noise levels: 1%, 2%, 5%
+    all_robustness_results = {}
     
-    for model_name, clean_pred in predictions.items():
-        # Add Gaussian noise to test data (simulating sensor degradation)
-        noise = np.random.normal(0, noise_level * np.std(clean_pred), len(clean_pred))
-        noisy_predictions[model_name] = clean_pred + noise
+    for noise_level in noise_levels:
+        noisy_predictions = {}
+        for model_name, clean_pred in predictions.items():
+            # Add Gaussian noise to test data (simulating sensor degradation)
+            noise = np.random.normal(0, noise_level * np.std(clean_pred), len(clean_pred))
+            noisy_predictions[model_name] = clean_pred + noise
+        all_robustness_results[noise_level] = noisy_predictions
+    
+    print(f"  Testing {len(noise_levels)} noise levels: {[f'{n*100:.0f}%' for n in noise_levels]}")
     
     # Run analysis for each model
     print("\n[4/6] Computing metrics and statistics...")
     all_results = {}
-    robustness_results = {}
+    robustness_results = {}  # Primary robustness at first noise level
+    multi_robustness = {}  # All noise levels
     
     for model_name, y_pred in predictions.items():
         print(f"\n  Analyzing {model_name}...")
@@ -237,16 +243,22 @@ def run_comprehensive_evaluation(fd_number: int = 1,
         lifecycle = analyzer.early_vs_late_performance(true_rul, y_pred)
         metrics.update(lifecycle)
         
-        # Robustness analysis (CRITICAL for cyber-security)
-        robustness = analyzer.robustness_to_noise(
-            true_rul, y_pred, noisy_predictions[model_name], noise_level
-        )
+        # Multi-level robustness analysis
+        model_multi_robustness = []
+        for noise_level in noise_levels:
+            robustness = analyzer.robustness_to_noise(
+                true_rul, y_pred, all_robustness_results[noise_level][model_name], noise_level
+            )
+            model_multi_robustness.append(robustness)
+        
+        # Store primary (first level) for backward compat
+        robustness_results[model_name] = model_multi_robustness[0]
+        multi_robustness[model_name] = model_multi_robustness
         
         all_results[model_name] = metrics
-        robustness_results[model_name] = robustness
         
         print(f"    RMSE: {metrics['RMSE']:.2f} ± {(ci['RMSE_CI'][1] - ci['RMSE_CI'][0])/2:.2f}")
-        print(f"    Robustness Score: {robustness['Robustness_Score']:.1f}/100")
+        print(f"    Robustness Scores: {[f'{r['Robustness_Score']:.1f}' for r in model_multi_robustness]}")
     
     # Generate visualizations
     print("\n[5/6] Generating publication-quality visualizations...")
