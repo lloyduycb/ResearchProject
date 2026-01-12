@@ -176,20 +176,29 @@ def run_comprehensive_evaluation(fd_number: int = 1,
         print("Generating synthetic data for demonstration...")
         true_rul = np.random.exponential(50, 100)
     
-    # Load model predictions
+    # Load model predictions - DYNAMIC DISCOVERY
     print("\n[2/6] Loading model predictions...")
-    models = ['SVR', 'LSTM', 'TCN', 'Transformer']
     predictions = {}
     
-    for model_name in models:
-        pred_file = f'{predictions_path}/{model_name}_FD00{fd_number}_predictions.npy'
+    # Dynamically discover prediction files in the predictions directory
+    import glob
+    pattern = f'{predictions_path}/*_FD00{fd_number}_predictions.npy'
+    prediction_files = glob.glob(pattern)
+    
+    if not prediction_files:
+        print(f"\n  [ERROR] No prediction files found matching pattern: {pattern}")
+        print(f"         Expected format: <ModelName>_FD00{fd_number}_predictions.npy")
+        print(f"         Example: LSTM_FD00{fd_number}_predictions.npy")
+        print(f"\n  Use save_predictions.py to save your model outputs first.")
+        raise FileNotFoundError(f"No prediction files found in {predictions_path}")
+    
+    for pred_file in prediction_files:
+        # Extract model name from filename (e.g., "LSTM" from "LSTM_FD001_predictions.npy")
+        filename = os.path.basename(pred_file)
+        model_name = filename.split(f'_FD00{fd_number}_predictions.npy')[0]
         
-        if os.path.exists(pred_file):
-            predictions[model_name] = pred_loader.load_from_numpy(pred_file)
-            print(f"  [OK] Loaded {model_name} predictions from {pred_file}")
-        else:
-            print(f"  [WARNING] {model_name} predictions not found, generating synthetic data...")
-            predictions[model_name] = pred_loader.generate_test_predictions(true_rul, model_name)
+        predictions[model_name] = pred_loader.load_from_numpy(pred_file)
+        print(f"  [OK] Loaded {model_name} predictions from {pred_file}")
     
     # Generate noisy predictions for robustness testing
     print("\n[3/6] Generating noisy predictions for robustness analysis...")
@@ -346,36 +355,79 @@ def run_comprehensive_evaluation(fd_number: int = 1,
 
 
 if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description="NASA C-MAPSS RUL Evaluation Suite - Comprehensive model analysis",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python run_evaluation.py --fd 1
+  python run_evaluation.py --fd 3 --predictions-path ./my_predictions
+  python run_evaluation.py --demo  # Run with synthetic data for demonstration
+        """
+    )
+    parser.add_argument('--fd', type=int, default=1, choices=[1, 2, 3, 4],
+                        help='FD dataset number (1-4). Default: 1')
+    parser.add_argument('--data-path', type=str, default='./data',
+                        help='Path to C-MAPSS data files. Default: ./data')
+    parser.add_argument('--predictions-path', type=str, default='./predictions',
+                        help='Path to model prediction files. Default: ./predictions')
+    parser.add_argument('--output-path', type=str, default='./results',
+                        help='Path for output files. Default: ./results')
+    parser.add_argument('--demo', action='store_true',
+                        help='Run in demo mode with synthetic predictions (for testing)')
+    
+    args = parser.parse_args()
+    
     # Create necessary directories
-    os.makedirs('./results', exist_ok=True)
-    os.makedirs('./data', exist_ok=True)
-    os.makedirs('./predictions', exist_ok=True)
+    os.makedirs(args.output_path, exist_ok=True)
+    os.makedirs(args.data_path, exist_ok=True)
+    os.makedirs(args.predictions_path, exist_ok=True)
     
     print("\n" + "="*70)
     print("NASA C-MAPSS RUL EVALUATION SUITE")
     print("Research Project CYS6001-20")
     print("="*70)
     
-    print("\n[FILES] Directory Structure:")
-    print("  ./data/        - Place C-MAPSS dataset files here")
-    print("  ./predictions/ - Place your model predictions here")
-    print("  ./results/     - Output directory (auto-created)")
+    print("\n[CONFIG] Settings:")
+    print(f"  FD Dataset:       FD00{args.fd}")
+    print(f"  Data Path:        {args.data_path}")
+    print(f"  Predictions Path: {args.predictions_path}")
+    print(f"  Output Path:      {args.output_path}")
+    print(f"  Demo Mode:        {'Yes' if args.demo else 'No'}")
     
     print("\n" + "="*70)
     
-    # Run evaluation
-    # Change fd_number to evaluate different datasets (1, 2, 3, or 4)
-    results, robustness = run_comprehensive_evaluation(
-        fd_number=1,  # FD001 - simplest case
-        data_path='./data',
-        predictions_path='./predictions'
-    )
+    if args.demo:
+        # Generate demo predictions for testing
+        print("\n[DEMO MODE] Generating synthetic predictions...")
+        demo_true_rul = np.random.exponential(50, 100)
+        demo_models = ['SVR', 'LSTM', 'TCN', 'Transformer']
+        for model in demo_models:
+            from save_predictions import save_model_predictions
+            noise = {'SVR': 10, 'LSTM': 7, 'TCN': 5, 'Transformer': 5.5}[model]
+            fake_pred = demo_true_rul + np.random.normal(0, noise, len(demo_true_rul))
+            fake_pred = np.maximum(fake_pred, 0)
+            save_model_predictions(fake_pred, model, args.fd, args.predictions_path)
+        print("[DEMO MODE] Synthetic predictions created.\n")
     
-    print("\n\n[TIP] NEXT STEPS:")
-    print("="*70)
-    print("1. Replace synthetic predictions with your actual model outputs")
-    print("2. Save predictions as: ./predictions/[MODEL]_FD001_predictions.npy")
-    print("3. Re-run this script to generate real results")
-    print("4. Copy generated figures and tables into your paper")
-    print("5. Repeat for FD003 to show performance on complex data")
-    print("="*70)
+    # Run evaluation
+    try:
+        results, robustness = run_comprehensive_evaluation(
+            fd_number=args.fd,
+            data_path=args.data_path,
+            predictions_path=args.predictions_path
+        )
+        
+        print("\n\n[TIP] NEXT STEPS:")
+        print("="*70)
+        print("1. Save your model predictions using save_predictions.py")
+        print(f"2. File format: ./predictions/[MODEL]_FD00{args.fd}_predictions.npy")
+        print("3. Re-run this script to generate real results")
+        print("4. Copy generated figures and tables into your paper")
+        print("="*70)
+    except FileNotFoundError as e:
+        print(f"\n[FATAL] {e}")
+        print("\nTo run a demo with synthetic data, use: python run_evaluation.py --demo")
+
