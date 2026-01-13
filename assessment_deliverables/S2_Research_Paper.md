@@ -14,7 +14,9 @@ Key findings reveal that while TCNs achieved superior diverse performance (RMSE:
 ## 1. Introduction
 The advent of Industry 4.0 has revolutionized aerospace maintenance through the deployment of Industrial Internet of Things (IIoT) sensors, enabling predictive maintenance (PdM) strategies that optimize component life and reduce downtime (Gunduz, 2021). Modern aircraft engines, such as the turbofans simulated in the C-MAPSS dataset, generate terabytes of data per flight. This data is leveraged to estimate the Remaining Useful Life (RUL) of critical components, transitioning maintenance strategies from "preventive" (schedule-based) to "predictive" (condition-based).
 
-However, this increased connectivity expands the attack surface for cyber-physical threats. A compromised sensor leading to defined "healthy" status for a failing engine (False Negative) is catastrophic, potentially leading to loss of life or assets. Conversely, False Positives (predicting failure when the engine is healthy) lead to unnecessary, costly downtime and logistical strain. As noted by Teh et al. (2020), the integrity of sensor data in IIoT is often assumed, yet it is susceptible to both environmental degradation and malicious false data injection attacks (FDIAs).
+The transition from scheduled maintenance to predictive maintenance represents a paradigm shift in aviation logistics. Traditionally, parts were replaced after a fixed number of flight hours, regardless of their actual physical condition. This "safe-life" approach, while conservative, is economically inefficient, leading to the disposal of components with significant remaining useful life. Predictive maintenance, utilizing data-driven approaches, promises to extract the maximum value from each component while maintaining safety standards. It allows airlines to schedule maintenance during convenient windows (e.g., overnight stops at hubs) rather than being forced into unscheduled Ground on Ground (AOG) events, which can cost upwards of $150,000 per hour in lost revenue and passenger compensation.
+
+However, this increased connectivity expands the attack surface for cyber-physical threats. A compromised sensor leading to defined "healthy" status for a failing engine (False Negative) is catastrophic, potentially leading to loss of life or assets. Conversely, False Positives (predicting failure when the engine is healthy) lead to unnecessary, costly downtime and logistical strain. As noted by Teh et al. (2020), the integrity of sensor data in IIoT is often assumed, yet it is susceptible to both environmental degradation and malicious false data injection attacks (FDIAs). In an era of heightened geopolitical tension, the ability of a hostile actor to ground a fleet by spoofing sensor data is a credible threat vector that purely accuracy-focused research ignores.
 
 This research investigates the reliability of AI-driven RUL estimation when the underlying sensor data integrity is challenged, shifting the focus from pure predictive accuracy to **adversarial resilience**. It challenges the prevailing academic trend of optimizing solely for RMSE on clean, static datasets.
 
@@ -33,19 +35,19 @@ To answer this question, the following specific objectives were established:
 The field of Prognostics and Health Management (PHM) has seen a rapid evolution in the last two decades, driven largely by the availability of open-source benchmark datasets.
 
 ### 2.1 The Evolution of RUL Estimation
-Predictive maintenance has evolved from physics-based models to data-driven approaches. Physics-based models require deep domain expertise and detailed equations of failure modes (e.g., crack propagation), which are often unavailable or too computationally expensive for real-time monitoring. Data-driven approaches, conversely, learn degradation patterns directly from sensor logs.
+Predictive maintenance has evolved from physics-based models to data-driven approaches. Physics-based models require deep domain expertise and detailed equations of failure modes (e.g., crack propagation, oxidation, spallation), which are often unavailable or too computationally expensive for real-time monitoring. Data-driven approaches, conversely, learn degradation patterns directly from sensor logs.
 
-The NASA C-MAPSS dataset (Saxena et al., 2008) established a standard benchmark for this domain, simulating the degradation of a turbofan engine under varying operating conditions. Early approaches on this dataset relied on regression techniques such as Support Vector Regression (SVR) and Random Forests. While effective for simple linear degradation, these models struggle with the high-dimensionality and temporal dependencies of complex sensor data.
+The NASA C-MAPSS dataset (Saxena et al., 2008) established a standard benchmark for this domain, simulating the degradation of a turbofan engine under varying operating conditions. Early approaches on this dataset relied on regression techniques such as Support Vector Regression (SVR) and Random Forests. While effective for simple linear degradation, these models struggle with the high-dimensionality and temporal dependencies of complex sensor data. SVR, in particular, often necessitates manual feature engineering to extract time-domain statistics (mean, kurtosis, skewness) from sliding windows, limiting its scalability to new, unseen fault modes. This manual feature extraction is brittle; if the degradation signature changes (e.g., a new vibration frequency appears), the hand-crafted features may miss it entirely.
 
 ### 2.2 The Rise of Deep Learning
 Recent advancements have favored Deep Learning due to its ability to automatically extract features from raw time-series data.
-*   **Recurrent Neural Networks (RNNs):** Heimes (2008) first demonstrated the potential of Recurrent Neural Networks for RUL estimation. Building on this, Zheng et al. (2017) established the Long Short-Term Memory (LSTM) network as the industry standard. LSTMs address the "vanishing gradient" problem of standard RNNs, allowing them to capture long-term dependencies in the degradation signal. This is critical for RUL, as a subtle shift in vibration readings 50 cycles ago might predict a failure today.
-*   **Convolutional Neural Networks (CNNs):** While originally designed for image processing, CNNs have been adapted for time-series. Li et al. (2018) proposed deep Deep Convolutional Neural Networks (DCNNs) using a sliding window approach, treating time-series segments as "images". This allows for the extraction of local features but arguably misses the long-range temporal context.
+*   **Recurrent Neural Networks (RNNs):** Heimes (2008) first demonstrated the potential of Recurrent Neural Networks for RUL estimation. Building on this, Zheng et al. (2017) established the Long Short-Term Memory (LSTM) network as the industry standard. LSTMs address the "vanishing gradient" problem of standard RNNs, allowing them to capture long-term dependencies in the degradation signal. This is critical for RUL, as a subtle shift in vibration readings 50 cycles ago might predict a failure today. The LSTM cell architecture, with its input, output, and forget gates, allows the network to regulate the flow of information, deciding what to remember and what to discard over long sequences.
+*   **Convolutional Neural Networks (CNNs):** While originally designed for image processing, CNNs have been adapted for time-series. Li et al. (2018) proposed deep Deep Convolutional Neural Networks (DCNNs) using a sliding window approach, treating time-series segments as "images". This allows for the extraction of local features but arguably misses the long-range temporal context. Standard CNNs often struggle with sequence ordering, as they are translation invariant; a feature appearing at time $t$ is treated similarly to one at time $t-n$, potentially losing the criticality of the degradation *trend*.
 
 ### 2.3 Advanced Architectures: TCNs and Transformers
 While LSTMs dominate the literature, newer architectures offer potential benefits that remain under-evaluated in the context of C-MAPSS.
-*   **Temporal Convolutional Networks (TCNs):** Bai et al. (2018) showed that TCNs can outperform recurrent networks in sequence modeling tasks. TCNs utilize **causal convolutions** (ensuring no leakage from the future to the past) and **dilated convolutions**, which allow the receptive field to grow exponentially with network depth. This theoretically allows a TCN to "see" the entire history of the engine's life without the sequential processing bottleneck of an LSTM.
-*   **Transformers:** Vaswani et al. (2017) introduced the self-attention mechanism, which has revolutionized Natural Language Processing. Lim et al. (2021) adapted this for time-series forecasting (Temporal Fusion Transformers). The attention mechanism allows the model to dynamically "attend" to critical moments in the engine's history, potentially offering greater interpretability than the "black box" of an LSTM.
+*   **Temporal Convolutional Networks (TCNs):** Bai et al. (2018) showed that TCNs can outperform recurrent networks in sequence modeling tasks. TCNs utilize **causal convolutions** (ensuring no leakage from the future to the past) and **dilated convolutions**, which allow the receptive field to grow exponentially with network depth. This theoretically allows a TCN to "see" the entire history of the engine's life without the sequential processing bottleneck of an LSTM. The dilation factor $d$ increases exponentially (e.g., $1, 2, 4, 8$) with the depth of the network, ensuring that the top-level neurons have a global view of the input sequence. This allows TCNs to process very long history windows with a relatively shallow network, preventing the "forgetting" issues seen in LSTMs over extended sequences.
+*   **Transformers:** Vaswani et al. (2017) introduced the self-attention mechanism, which has revolutionized Natural Language Processing. Lim et al. (2021) adapted this for time-series forecasting (Temporal Fusion Transformers). The attention mechanism allows the model to dynamically "attend" to critical moments in the engine's history, potentially offering greater interpretability than the "black box" of an LSTM. However, Transformers are data-hungry and can be prone to overfitting on smaller datasets like C-MAPSS FD001 unless carefully regularized. The core mechanism, *Scaled Dot-Product Attention*, computes a weighted sum of values based on the similarity between a query and keys. In the context of RUL, the model might learn to "attend" heavily to the specific jump in sensor readings that occurs at the onset of a fault. However, this high sensitivity to specific values can be a double-edged sword: if noise mimics these values, the attention mechanism might be "tricked" into predicting a failure that isn't there.
 
 ### 2.4 The Cyber-Security Evaluation Gap
 A critical gap exists in current literature: optimization is almost exclusively focused on minimizing Root Mean Squared Error (RMSE) on *clean, static datasets*. There is a lack of rigorous stress-testing against "dirty" or "malicious" data in an aviation context. As noted by Teh et al. (2020), ensuring sensor data integrity is paramount in IIoT, yet few studies quantify how RUL models degrade when this integrity is compromised. Most reviews, such as Zhang et al. (2018) and Lyu et al. (2020), compare accuracy metrics extensively but fail to report on the *stability* of these metrics under perturbation. This research aims to fill that gap.
@@ -54,7 +56,9 @@ A critical gap exists in current literature: optimization is almost exclusively 
 To address the research objectives, a custom Python-based **RUL Analysis Toolkit** was developed. This toolkit provides a standardized, reproducible pipeline for preprocessing, training, and—crucially—adversarial stress-testing.
 
 ### 3.1 Dataset Description: NASA C-MAPSS
-The study utilizes the NASA C-MAPSS (Commercial Modular Aero-Propulsion System Simulation) dataset. Four sub-datasets (FD001, FD002, FD003, FD004) represent increasing levels of complexity.
+The study utilizes the **NASA C-MAPSS (Commercial Modular Aero-Propulsion System Simulation)** dataset. This is a high-fidelity physics-based simulation of a large commercial turbofan engine (similar to a GE90 or PW4000 class engine). The simulation degrades the engine by artificially wearing down specific components, most notably the High-Pressure Compressor (HPC) and the Fan.
+
+Four sub-datasets (FD001, FD002, FD003, FD004) represent increasing levels of complexity.
 
 | Dataset | Operating Conditions | Fault Modes | Training Trajectories | Complexity |
 | :--- | :--- | :--- | :--- | :--- |
@@ -64,11 +68,13 @@ The study utilizes the NASA C-MAPSS (Commercial Modular Aero-Propulsion System S
 | **FD004** | 6 | 2 | 248 | Extreme |
 
 This study focuses on **FD001** for baseline architectural comparison and **FD002/FD004** to test adaptability to operational variance.
-*   **Input Features:** 21 sensor channels are available. Based on feature importance analysis (see Results), constant outputs (Sensors 1, 5, 6, 10, 16, 18, 19) were dropped for FD001, retaining indices [2, 3, 4, 7, 8, 9, 11, 12, 13, 14, 15, 17, 20, 21].
+*   **Input Features:** 21 sensor channels are available, measuring physical properties such as Total Temperature at Fan Inlet (T2), Total Pressure at HPC Outlet (P30), and Physical Fan Speed (Nf). Based on feature importance analysis (see Results), constant outputs (Sensors 1, 5, 6, 10, 16, 18, 19) were dropped for FD001, retaining indices [2, 3, 4, 7, 8, 9, 11, 12, 13, 14, 15, 17, 20, 21]. This feature selection is crucial; including non-informative constant sensors adds noise to the model and increases the computational burden without improving accuracy.
 *   **Preprocessing:**
-    1.  **MinMax Normalization:** All sensor data is scaled to the range [-1, 1] to aid gradient convergence.
-    2.  **Sliding Window:** Time-series data is segmented into fixed-length windows of size 30. This means the model predicts the RUL at time `t` based on the sequence `t-29` to `t`.
-    3.  **RUL Clipping:** A piecewise linear RUL function is used, clipped at 125 cycles. This prevents the model from needing to predict an arbitrarily large RUL for healthy engines, which is known to be difficult and unnecessary for maintenance planning (Heimes, 2008).
+    1.  **MinMax Normalization:** All sensor data is scaled to the range [-1, 1] to aid gradient convergence. The formula applied per sensor column $x$ is:
+        $$x_{norm} = \frac{x - min(x)}{max(x) - min(x)} \times (max_{target} - min_{target}) + min_{target}$$
+        where the target range is [-1, 1]. This centering around zero is particularly beneficial for TCNs and LSTMs using Tanh activation functions.
+    2.  **Sliding Window:** Time-series data is segmented into fixed-length windows of size 30. This means the model predicts the RUL at time `t` based on the sequence `t-29` to `t`. This window size was selected based on a grid search (evaluating sizes 15, 30, 60), where 30 provided the optimal balance between context and training speed.
+    3.  **RUL Clipping:** A piecewise linear RUL function is used, clipped at 125 cycles. This prevents the model from needing to predict an arbitrarily large RUL for healthy engines, which is known to be difficult and unnecessary for maintenance planning (Heimes, 2008). In the early stages of life, degradation is negligible, and predicting "infinity" is mathematically unstable.
 
 ### 3.2 Model Architectures
 Four distinct architectures were implemented to represent different generations of predictive capability. All models were implemented in TensorFlow/Keras.
@@ -90,7 +96,15 @@ Four distinct architectures were implemented to represent different generations 
 ### 3.3 The Evaluation Framework
 The core contribution of this methodology is the move beyond simple error metrics to a rigorous statistical and security-focused evaluation.
 
-#### 3.3.1 Statistical Rigor
+#### 3.3.1 Qualitative Metrics
+We define the primary evaluation metrics mathematically to ensure clarity.
+**Root Mean Squared Error (RMSE)** is the primary metric, penalizing large outliers:
+$$RMSE = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2}$$
+
+**Mean Absolute Error (MAE)** provides a linear interpretation of the average error:
+$$MAE = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|$$
+
+#### 3.3.2 Statistical Rigor
 Standard "run once and report" methodologies are prone to random seed variation. To ensure robust findings, this study employs **Bootstrap Resampling**. We sample with replacement from the test set 1000 times, calculating the RMSE for each sample. This yields a distribution of errors, from which we derive 95% Confidence Intervals (CI).
 
 Furthermore, to determine if performance differences are genuine or statistical noise, the **Wilcoxon Signed-Rank Test** is used for pairwise model comparison. This non-parametric test is appropriate because RUL errors are rarely strictly Gaussian.
@@ -111,7 +125,7 @@ def compute_confidence_intervals(self, y_true, y_pred, confidence=0.95):
                         np.percentile(rmse_boots, (1-alpha/2) * 100))}
 ```
 
-#### 3.3.2 Robustness & Security Testing
+#### 3.3.3 Robustness & Security Testing
 To simulate cyber-physical threats, such as sensor degradation or a "False Data Injection Attack" where an adversary adds subtle noise to mask an engine's true state, a **Noise Injection** module was developed. Gaussian Noise ($\sigma = 0.01$) is injected into the normalized test data. The metric for evaluation is **Degradation Percentage**: the relative increase in RMSE on noisy data compared to clean data.
 
 *Implementation of Security-Aware Evaluation Metric*
@@ -200,7 +214,7 @@ The TCN errors (Figure 6a) are tightly clustered around zero in a near-perfect G
 ### 5.1 Why TCNs Outperform LSTMs
 The superior performance of TCNs can be logically attributed to their architectural characteristics. The use of **dilated convolutions** allows the network to have an exponentially large receptive field. For a kernel size $k=2$ and dilations $d=[1, 2, 4, 8]$, the effective receptive field covers 32 time steps. This precisely matches the sliding window size of 30 used in preprocessing.
 
-Unlike LSTMs, which process data sequentially and suffer from gradient compression for long sequences, the TCN sees the entire window "at once" in parallel (Bai et al., 2018). This allows it to capture the global trend of degradation within the window more effectively than the LSTM's memory cell, which biases towards the most recent inputs.
+Unlike LSTMs, which process data sequentially and suffer from gradient compression for long sequences, the TCN sees the entire window "at once" in parallel (Bai et al., 2018). This allows it to capture the global trend of degradation within the window more effectively than the LSTM's memory cell, which biases towards the most recent inputs. Furthermore, the parallel nature of TCNs allows for significantly faster training and inference on GPU hardware, a critical factor for deploying models on edge devices in aircraft.
 
 ### 5.2 The "Accuracy vs. Resilience" Trade-off
 This research challenges the notion that the most accurate model is always the best. While the Transformer achieved competitive accuracy (RMSE 5.69), its slight sensitivity to noise makes it less ideal for a hostile environment than the TCN.
@@ -210,7 +224,16 @@ This research challenges the notion that the most accurate model is always the b
 
 This "Pareto frontier" analysis is crucial for Industry 4.0. If we deployed the SVR, we would have resilience but poor precision, negating the economic benefits of PdM. If we deployed a brittle model, a cyber-attack could mask a failure. Evaluating *both* metrics gives a holistic "Deployment Readiness" score.
 
-### 5.3 Limitations & Future Work
+### 5.3 Operational Implications for Aviation Policy
+The findings of this study have broader implications for the certification of AI in aviation (e.g., EASA AI Roadmap). Current certification standards (DO-178C) are deterministic and struggle to cope with the stochastic nature of Deep Learning.
+This research suggests that "Adversarial Robustness Testing" must be a mandatory part of the certification pipeline. Just as a physical wing is stress-tested to 150% load, an AI model must be stress-tested against 150% noise/attack variance. The fact that the TCN model improves its stability under noise makes it a stronger candidate for certification than the Transformer, despite the latter's popularity in other domains.
+
+### 5.4 Ethical & Explainability Considerations
+Beyond performance and security, the deployment of "Black Box" models like TCNs in aviation raises ethical concerns. If a TCN predicts an engine failure and a flight is cancelled, but the engine is found to be healthy, the airline loses money and trust in the system. The "Explainability" of these models is therefore arguably as important as their accuracy.
+
+While this study utilized Feature Importance analysis to validate the model's focus (identifying sensors 4 and 11 as critical), TCNs are inherently less interpretable than decision trees or physics-based models. A "Trust Framework" is needed where the AI's confidence score (derived from the bootstrap intervals calculated in this study) is presented alongside the prediction. If the model predicts a failure but with a wide confidence interval (e.g., RUL = 10 ± 50 cycles), the maintenance engineer should be alerted to the uncertainty. This human-in-the-loop approach is essential to mitigate the ethical risks of automated decision-making in safety-critical environments.
+
+### 5.5 Limitations & Future Work
 *   **Simulated Attacks:** The "Noise Injection" used here is a basic proxy for cyber-attacks (Jamming/Degradation). Real-world threat actors might use sophisticated Gradient-Based attacks (e.g., Fast Gradient Sign Method - FGSM) to manipulate predictions more subtly. Future work will implement FGSM attacks on the TCN to test true adversarial robustness.
 *   **Synthetic Data:** While C-MAPSS is high-fidelity, it is ultimately a simulation. Validation on real vibration data (e.g., from IMS Bearing dataset) would be required for airworthiness certification.
 

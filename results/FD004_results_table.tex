@@ -1,0 +1,14 @@
+\begin{table}
+\caption{Model Performance Comparison}
+\label{tab:results}
+\begin{tabular}{llllllllllllllllllll}
+\toprule
+ & RMSE & MAE & R2 & PHM_Score & Max_Error & MAPE & RMSE_CI_Lower & RMSE_CI_Upper & Mean_Error & Std_Error & Skewness & Kurtosis & Q25_Error & Q75_Error & IQR & Early_Life_RMSE & Late_Life_RMSE & Early_Life_MAE & Late_Life_MAE \\
+\midrule
+SVR & 9.430000 & 7.550000 & 0.970000 & 316.210000 & 33.210000 & 19.910000 & \textbf{8.61} & \textbf{10.32} & -0.180000 & \textbf{9.43} & -0.110000 & \textbf{0.21} & -6.490000 & \textbf{6.26} & \textbf{12.75} & \textbf{9.34} & \textbf{9.61} & \textbf{7.29} & \textbf{8.09} \\
+LSTM & 6.520000 & 5.170000 & \textbf{0.99} & 173.830000 & 16.880000 & 13.320000 & 5.990000 & 7.100000 & \textbf{0.19} & 6.520000 & -0.130000 & -0.050000 & -3.500000 & 4.580000 & 8.080000 & 6.660000 & 6.210000 & 5.250000 & 5.000000 \\
+TCN & \textbf{5.22} & \textbf{4.15} & 0.990000 & \textbf{126.61} & 17.820000 & \textbf{11.53} & 4.760000 & 5.660000 & 0.120000 & 5.220000 & -0.160000 & -0.040000 & \textbf{-3.2} & 3.560000 & 6.760000 & 5.140000 & 5.380000 & 4.120000 & 4.220000 \\
+Transformer & 5.430000 & 4.460000 & 0.990000 & 133.470000 & \textbf{15.5} & 12.700000 & 5.020000 & 5.850000 & -0.310000 & 5.420000 & \textbf{-0.1} & -0.480000 & -4.800000 & 3.650000 & 8.450000 & 5.180000 & 5.910000 & 4.290000 & 4.820000 \\
+\bottomrule
+\end{tabular}
+\end{table}

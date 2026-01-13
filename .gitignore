@@ -12,9 +12,25 @@ env/
 .vscode/
 .idea/
 
-# Results and predictions (user-generated, not tracked)
-results/
-predictions/
+# Results (Exclude raw data but maybe we want to keep specific plots? 
+# Usually derived data is ignored, but user wants to show results.
+# I'll Un-ignore specific images if needed, but for now let's keep it safe or 
+# maybe allow the results folder if it's not too huge.
+# The user wants to SHOW drafts in repo? No, "not show the drafts".
+# So drafts should be ignored.)
+
+# Drafts and WIP
+draft*.*
+*_Basis.md
+Assessment_Alignment_Analysis.md
+nasa-dashboard/
+
+# Generated deliverables (Keep final docs, ignore intermediate steps)
+# We will explicitly add the renamed files later.
+
+# Large binaries
+*.zip
+*.tar.gz
 
 # Jupyter Notebooks
 .ipynb_checkpoints/
@@ -28,4 +44,3 @@ Thumbs.db
 
 # Temporary Word files
 ~$*
-
